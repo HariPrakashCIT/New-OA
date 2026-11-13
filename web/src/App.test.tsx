@@ -1,13 +1,21 @@
 import React from 'react';
 import {render,screen,fireEvent,cleanup,waitFor} from '@testing-library/react';
 import {describe,it,expect,vi,afterEach,beforeEach} from 'vitest';
-const mock=vi.hoisted(()=>({session:null as any,signIn:vi.fn(),signUp:vi.fn()}));
+const mock=vi.hoisted(()=>({session:null as any,defaultConfig:null as any,signIn:vi.fn(),signUp:vi.fn()}));
+vi.mock('./deployment',()=>({get defaultDeployment(){return mock.defaultConfig}}));
 vi.mock('@supabase/supabase-js',()=>({createClient:()=>({auth:{getSession:()=>Promise.resolve({data:{session:mock.session}}),onAuthStateChange:()=>({data:{subscription:{unsubscribe:vi.fn()}}}),signOut:()=>Promise.resolve({error:null}),signInWithPassword:mock.signIn,signUp:mock.signUp}})}));
 import {App} from './main';
 afterEach(()=>{cleanup();localStorage.clear();mock.session=null;vi.unstubAllGlobals()});
-beforeEach(()=>{window.scrollTo=vi.fn();mock.signIn.mockResolvedValue({data:{session:null},error:new Error('Invalid login')})});
+beforeEach(()=>{mock.defaultConfig=null;window.scrollTo=vi.fn();mock.signIn.mockResolvedValue({data:{session:null},error:new Error('Invalid login')})});
 
 describe('Web frontend',()=>{
+ it('opens sign-in directly when the hosted connection is supplied',()=>{
+  mock.defaultConfig={api:'https://api.example.com',url:'https://project.supabase.co',anon:'public-only'};
+  render(<App/>);
+  fireEvent.click(screen.getByRole('button',{name:'Connect insole'}));
+  expect(screen.getByLabelText('Email address')).toBeTruthy();
+  expect(screen.queryByRole('button',{name:'Set up backend first'})).toBeNull();
+ });
  it('shows real-data empty states without fabricated telemetry',()=>{
   render(<App/>);
   expect(screen.getByText('Waiting for your first reading')).toBeTruthy();

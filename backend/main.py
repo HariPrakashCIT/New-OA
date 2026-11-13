@@ -72,7 +72,7 @@ class ReportInput(BaseModel):
     period: Literal['day','week','month']='week'
 
 @app.get('/health')
-async def health(): return {'status':'ok','configured':bool(URL and KEY)}
+async def health(): return {'status':'ok','configured':bool(URL and KEY),'ai_configured':gemma.status()['configured']}
 @app.get('/ready')
 async def ready():
     try:

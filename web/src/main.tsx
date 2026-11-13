@@ -6,6 +6,7 @@ import {ResponsiveContainer,LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Leg
 import './style.css';
 import {AIWorkspace} from './AIWorkspace';
 import {GemmaStatus,GemmaExplanationPanel,GemmaInfo,GemmaExplanation} from './GemmaPanel';
+import {defaultDeployment} from './deployment';
 type Config={api:string;url:string;anon:string};
 type Reading={id:number;timestamp:string;received_at:string;heel_pressure:number;ball_pressure:number;toe_pressure:number};
 type Device={id:string;name:string;online:boolean;last_reading:Reading|null};
@@ -13,7 +14,7 @@ type Walk={id:string;device_id:string;started_at:string;ended_at:string|null};
 type Analysis={samples:number;status:string;shares:number[]|null;observations:string[];recommendations:string[];disclaimer:string;truncated?:boolean;ai_explanation?:GemmaExplanation};
 type Report={id:string;period:string;created_at:string;analysis:Analysis};
 const nav=[['Overview',LayoutDashboard],['Live monitoring',Radio],['Walking sessions',Footprints],['AI workspace',Sparkles],['Mobility insights',ChartNoAxesCombined],['Reports',FileText],['History',History]] as const;
-const saved=()=>{try{return JSON.parse(localStorage.getItem('osteocare-config')||'null')}catch{return null}};
+const saved=()=>{try{const value=JSON.parse(localStorage.getItem('osteocare-config')||'null');if(value?.url===defaultDeployment?.url&&value?.api==='https://osteocare-api.onrender.com')return defaultDeployment;return value||defaultDeployment}catch{return defaultDeployment}};
 const fmt=(s:string)=>new Date(s).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
 export function App(){
  const [config,setConfig]=useState<Config|null>(saved),[page,setPage]=useState('Overview'),[modal,setModal]=useState<string|null>(null),[session,setSession]=useState<Session|null>(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);

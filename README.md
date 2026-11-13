@@ -2,8 +2,9 @@
 
 Website: https://hariprakashcit.github.io/New-OA/
 
-The frontend and AI workspace are public on GitHub Pages. **The backend,
-Supabase database and live AI generation still need account configuration.**
+The frontend and AI workspace are public on GitHub Pages. The free backend is deployed at https://osteocare-new-oa-api.onrender.com
+and the Supabase tables are created. **Database access and AI generation still
+require the two secret keys to be entered in Render.**
 
 ## Activate the free backend and AI
 
@@ -11,7 +12,7 @@ Follow [the free hosting setup](GEMMA_SETUP.md). The selected AI model is
 **Gemma 4 26B A4B (free)** through OpenRouter. The backend rejects paid model
 aliases and requires a secret API key; it does not silently use paid inference.
 
-[Deploy the free FastAPI service on Render](https://render.com/deploy?repo=https://github.com/HariPrakashCIT/New-OA)
+[Configure the existing backend on Render](https://dashboard.render.com/web/srv-dbr9n9c9v7es73bv1ki0/env)
 
 The existing Supabase project is prepared with separate `osteocare_` tables.
 Supply its service-role key and your OpenRouter key in Render's environment settings.
@@ -45,6 +46,10 @@ For GitHub Pages updates, build with `npm run build -- --base=./`, copy `dist/`
 into `docs/`, retain `docs/.nojekyll`, then commit. GitHub Pages automatically
 publishes `main:/docs`.
 
-Latest validation: 29 backend tests, 13 frontend tests, TypeScript and Vite build
+Latest validation: 29 backend tests, 14 frontend tests, TypeScript and Vite build
 passed. Live AI inference, database integration and hardware still need testing
 after account setup. No real sensor data or credentials are stored here.
+
+The website includes only the public Supabase key and service URLs. Server and
+model keys must remain in Render. Supabase schema migration:
+`osteocare_isolated_mobility_tables`. The existing unprefixed tables are preserved.

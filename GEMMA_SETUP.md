@@ -38,7 +38,13 @@ Account IDs, device IDs and raw readings are not included in the prompt.
 
 ## 3. Deploy the free FastAPI service
 
-[Deploy from this repository on Render](https://render.com/deploy?repo=https://github.com/HariPrakashCIT/New-OA)
+The service is already created on the free plan in Singapore:
+https://osteocare-new-oa-api.onrender.com
+
+[Set the missing secrets on the existing service](https://dashboard.render.com/web/srv-dbr9n9c9v7es73bv1ki0/env).
+Do not create another service. The template below is for future fresh deployments.
+
+[Render blueprint for a fresh deployment](https://render.com/deploy?repo=https://github.com/HariPrakashCIT/New-OA)
 
 Sign in, connect the repository, review `render.yaml`, and retain the **Free**
 service plan. No GPU service or Render database is included. Supply:
@@ -64,8 +70,10 @@ when a payment method is present. These are demo services, not an always-on SLA.
 
 ## 4. Connect the website
 
-Open the website's connection settings and enter the actual Render HTTPS URL,
-Supabase URL and **public/anon** key. Sign up, confirm your email and sign in.
+The website now defaults to the deployed Render URL and selected Supabase
+project with its public key. No private key is in the frontend. Custom connections
+can still be entered through Settings. An earlier connection to the old
+`osteocare-api.onrender.com` service for this same project is upgraded automatically. Sign up, confirm your email and sign in.
 Pair the real ESP32 insole, record three-FSR readings, and create a report.
 In **AI workspace**, select the report, consent to sending its aggregate
 statistics and select **Explain with Gemma**. Empty reports cannot generate AI.
@@ -91,7 +99,7 @@ Do not launch paid GPU resources under the free-only authorization.
 
 ## Current checks
 
-29 backend tests and 13 frontend tests pass; TypeScript and the production build
+29 backend tests and 14 frontend tests pass; TypeScript and the production build
 pass. Model responses are mocked in tests. Live database/ESP32/model integration
 still requires the services and a real hardware rehearsal. AI explanations are
 descriptive, can be wrong, and are not medical diagnoses.
