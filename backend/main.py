@@ -14,6 +14,7 @@ from backend import gemma
 
 URL = os.getenv('SUPABASE_URL', '').rstrip('/')
 KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
+TABLES = {name: 'osteocare_' + name for name in ('profiles','devices','readings','sessions','reports')}
 app = FastAPI(title='OsteoCare AI', version='1.0.0')
 app.add_middleware(CORSMiddleware, allow_origins=os.getenv('CORS_ORIGINS','http://localhost:5173').split(','), allow_methods=['GET','POST','PUT'], allow_headers=['Authorization','Content-Type','X-Device-Key'])
 
@@ -26,7 +27,7 @@ def stamp(): return now().isoformat()
 async def db(method, table, params=None, body=None):
     if not URL or not KEY: raise HTTPException(503, 'Backend Supabase configuration is missing')
     async with httpx.AsyncClient(timeout=15) as client:
-        r = await client.request(method, URL+'/rest/v1/'+table, params=params, json=body, headers={'apikey':KEY,'Authorization':'Bearer '+KEY,'Prefer':'return=representation'})
+        r = await client.request(method, URL+'/rest/v1/'+TABLES[table], params=params, json=body, headers={'apikey':KEY,'Authorization':'Bearer '+KEY,'Prefer':'return=representation'})
     if r.status_code>=400:
         if r.status_code==409: raise HTTPException(409, 'Duplicate reading or an active session already exists')
         raise HTTPException(502, 'Database operation failed')

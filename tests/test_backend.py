@@ -1,9 +1,25 @@
 from datetime import timedelta
 import hashlib
+import asyncio
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from backend import main as m
 from backend.analysis import analyze
+
+def test_storage_uses_isolated_osteocare_tables(monkeypatch):
+    monkeypatch.setattr(m,'URL','https://project.example')
+    monkeypatch.setattr(m,'KEY','test-service-key')
+    original=httpx.AsyncClient
+    seen=[]
+    def respond(request):
+        seen.append(request.url.path)
+        assert request.headers['apikey']=='test-service-key'
+        return httpx.Response(200,json=[])
+    monkeypatch.setattr(m.httpx,'AsyncClient',lambda **kw:original(transport=httpx.MockTransport(respond),**kw))
+    for table in ['profiles','devices','readings','sessions','reports']:
+        asyncio.run(m.db('GET',table))
+    assert seen==['/rest/v1/osteocare_'+table for table in ['profiles','devices','readings','sessions','reports']]
 
 @pytest.fixture
 def client(monkeypatch):

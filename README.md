@@ -13,8 +13,8 @@ aliases and requires a secret API key; it does not silently use paid inference.
 
 [Deploy the free FastAPI service on Render](https://render.com/deploy?repo=https://github.com/HariPrakashCIT/New-OA)
 
-Create a free Supabase project first, apply `database/schema.sql`, and supply
-its service-role key and your OpenRouter key in Render's environment settings.
+The existing Supabase project is prepared with separate `osteocare_` tables.
+Supply its service-role key and your OpenRouter key in Render's environment settings.
 Never commit real keys or put server secrets into the browser.
 
 ## Saved source
@@ -45,6 +45,6 @@ For GitHub Pages updates, build with `npm run build -- --base=./`, copy `dist/`
 into `docs/`, retain `docs/.nojekyll`, then commit. GitHub Pages automatically
 publishes `main:/docs`.
 
-Latest validation: 28 backend tests, 13 frontend tests, TypeScript and Vite build
+Latest validation: 29 backend tests, 13 frontend tests, TypeScript and Vite build
 passed. Live AI inference, database integration and hardware still need testing
 after account setup. No real sensor data or credentials are stored here.

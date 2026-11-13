@@ -1,7 +1,7 @@
 # Free FastAPI service. Supabase and the OpenRouter API key must be supplied securely.
 services:
   - type: web
-    name: osteocare-api
+    name: osteocare-new-oa-api
     runtime: python
     plan: free
     buildCommand: pip install -r backend/requirements.txt
@@ -11,7 +11,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.14
       - key: SUPABASE_URL
-        sync: false
+        value: https://joekuvpumewmannqimsd.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: CORS_ORIGINS

@@ -5,11 +5,13 @@ The selected model is **Gemma 4 26B A4B (free)** through OpenRouter,
 The website is live at https://hariprakashcit.github.io/New-OA/.
 **AI is not active until the accounts, secrets and database below are configured.**
 
-## 1. Create a free Supabase project
+## 1. Supabase database
 
-Use https://supabase.com/dashboard and select the Free plan. Run
-`database/schema.sql` once in the new project's SQL editor. It creates profiles,
-devices, readings, walking sessions and reports with row-level security enabled.
+The existing `oesteo-AI` project (`joekuvpumewmannqimsd`) is selected.
+Migration `osteocare_isolated_mobility_tables` has created the five
+`osteocare_`-prefixed tables with row-level security and backend-only grants.
+Existing unprefixed application tables were not changed.
+For a different fresh project, run `database/schema.sql` once.
 Do not rerun it over an existing database without inspecting its schema.
 Set the Auth site URL to `https://hariprakashcit.github.io/New-OA/` and add that
 URL to allowed redirect URLs. Keep email confirmation enabled and complete it
@@ -89,7 +91,7 @@ Do not launch paid GPU resources under the free-only authorization.
 
 ## Current checks
 
-28 backend tests and 13 frontend tests pass; TypeScript and the production build
+29 backend tests and 13 frontend tests pass; TypeScript and the production build
 pass. Model responses are mocked in tests. Live database/ESP32/model integration
 still requires the services and a real hardware rehearsal. AI explanations are
 descriptive, can be wrong, and are not medical diagnoses.
