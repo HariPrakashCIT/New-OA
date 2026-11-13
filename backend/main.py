@@ -1,12 +1,12 @@
 import os, secrets, hashlib, asyncio, json
 from datetime import datetime, timezone, timedelta
 from io import BytesIO
-from typing import Literal
+from typing import Literal, Annotated
 import httpx
 from fastapi import FastAPI, Depends, HTTPException, Header, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, JSONResponse
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import simpleSplit
 from backend.analysis import analyze
@@ -63,6 +63,25 @@ class PressureSample(BaseModel):
 class Reading(PressureSample):
     device_id: str = Field(min_length=1,max_length=80)
 
+class KneeReading(BaseModel):
+    model_config=ConfigDict(extra='forbid',strict=True)
+    device_id: str=Field(min_length=1,max_length=80)
+    timestamp: datetime
+    v: int=Field(ge=1,le=1)
+    seq: int=Field(ge=0,le=4294967295)
+    ms: int=Field(ge=0,le=4294967295)
+    fsr: list[Annotated[int,Field(ge=0,le=4095)]]=Field(min_length=3,max_length=3)
+    total: int=Field(ge=0,le=12285)
+    pressed: list[bool]=Field(min_length=3,max_length=3)
+    @field_validator('timestamp',mode='before')
+    @classmethod
+    def check_time(cls,value): return PressureSample.timestamp_valid(value)
+    @model_validator(mode='after')
+    def check_consistency(self):
+        if self.total!=sum(self.fsr) or self.pressed!=[value>300 for value in self.fsr]:
+            raise ValueError('total and pressed must match the three FSR readings')
+        return self
+
 class DeviceInput(BaseModel):
     name: str=Field(min_length=1,max_length=80)
 class SessionInput(BaseModel): device_id: str
@@ -90,6 +109,13 @@ async def ingest(reading: Reading,x_device_key: str=Header(default='')):
     row=reading.model_dump(mode='json'); row['received_at']=stamp()
     await db('POST','readings',body=row)
     return {'accepted':True}
+@app.post('/api/knee-readings',status_code=201)
+async def ingest_knee(reading:KneeReading,x_device_key:str=Header(default='')):
+    # Supplied firmware order is heel, ball, toe, in baseline-adjusted ADC counts.
+    mapped=Reading(device_id=reading.device_id,timestamp=reading.timestamp,
+                   heel_pressure=reading.fsr[0],ball_pressure=reading.fsr[1],toe_pressure=reading.fsr[2])
+    return await ingest(mapped,x_device_key)
+
 @app.post('/api/devices/{device_id}/usb-readings',status_code=201)
 async def ingest_usb(device_id:str,reading:PressureSample,uid=Depends(user)):
     # The signed-in browser bridges USB data. Never give the browser a service key.

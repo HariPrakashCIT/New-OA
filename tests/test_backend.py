@@ -135,3 +135,33 @@ def test_usb_rejects_invalid_and_spoofed_samples(client):
     sample=reading();sample.pop('device_id')
     for change in [{'heel_pressure':None},{'toe_pressure':4096},{'device_id':'OTHER'},{'ball_pressure':False},{'timestamp':'2020-01-01T00:00:00Z'}]:
         assert client.post('/api/devices/D1/usb-readings',json={**sample,**change},headers={'Authorization':'Bearer valid'}).status_code==422
+
+
+def knee_packet():
+    return dict(device_id='D1',timestamp=m.stamp(),v=1,seq=12,ms=5000,fsr=[123,456,0],total=579,pressed=[False,True,False])
+
+
+def test_knee_wifi_packet_maps_exact_sensor_order(client,monkeypatch):
+    stored=[]
+    async def db(method,table,params=None,body=None):
+        if method=='GET': return [{'id':'D1','key_hash':hashlib.sha256(b'secret').hexdigest()}]
+        stored.append(body);return [body]
+    monkeypatch.setattr(m,'db',db)
+    assert client.post('/api/knee-readings',json=knee_packet(),headers={'X-Device-Key':'bad'}).status_code==401
+    assert not stored
+    assert client.post('/api/knee-readings',json=knee_packet(),headers={'X-Device-Key':'secret'}).status_code==201
+    assert [stored[0][k] for k in ['heel_pressure','ball_pressure','toe_pressure']]==[123,456,0]
+
+
+def test_knee_wifi_rejects_corrupt_packets(client):
+    for change in [{'fsr':[1,2]},{'fsr':[0,0,4096]},{'fsr':[False,456,0]},{'total':10},{'pressed':[True,True,True]},{'v':2},{'seq':-1},{'timestamp':'2020-01-01T00:00:00Z'}]:
+        assert client.post('/api/knee-readings',json={**knee_packet(),**change}).status_code==422
+
+
+def test_knee_zone_patterns_and_gemma_summary():
+    from backend.gemma import summary_for
+    a=analyze([dict(timestamp=m.stamp(),heel_pressure=0,ball_pressure=301,toe_pressure=300),dict(timestamp=m.stamp(),heel_pressure=200,ball_pressure=501,toe_pressure=100)])
+    assert a['zone_stats']['heel']=={'min':0,'mean':100.0,'max':200,'above_300_percent':0.0}
+    assert a['zone_stats']['ball']['above_300_percent']==100
+    assert a['zone_stats']['toe']['above_300_percent']==0
+    assert summary_for(a)['zone_statistics_adc']==a['zone_stats']

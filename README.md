@@ -7,11 +7,14 @@ and the Supabase tables are created. The deployed backend passes its database
 readiness check and detects the AI configuration. Real AI generation and physical
 sensor operation still require a signed-in hardware rehearsal.
 
-## Connect an ESP32 with USB
+## Connect an ESP32 over Wi-Fi
 
-Use **USB connection** on the website. Upload the downloadable USB firmware once,
-then click **Connect USB** in desktop Chrome or Edge. Local monitoring works
-without sign-in; enable cloud saving to use reports and AI. See [USB setup](USB_SETUP.md).
+Use **Wi-Fi connection** on the website. The supplied Knee Health Arduino code
+has been adapted to send three baseline-adjusted FSR readings to the hosted API.
+Download the firmware ZIP, enter your Wi-Fi/device credentials locally, and upload
+once. Sensor transfer uses Wi-Fi only. See [Wi-Fi setup and file analysis](WIFI_SETUP.md).
+The earlier USB implementation remains in source for reference but is not part of
+the current website workflow.
 
 ## Configure the free backend and AI
 
@@ -53,7 +56,7 @@ For GitHub Pages updates, build with `npm run build -- --base=./`, copy `dist/`
 into `docs/`, retain `docs/.nojekyll`, then commit. GitHub Pages automatically
 publishes `main:/docs`.
 
-Latest validation: 32 backend tests, 22 frontend tests, TypeScript and Vite build
+Latest validation: 35 backend tests, 22 frontend tests, TypeScript and Vite build
 passed. Local Chromium checks cover USB live preview, disconnect/reconnect,
 firmware download and unsupported browsers. No real sensor data or credentials
 are stored here. Physical hardware and live AI generation still need a rehearsal.
