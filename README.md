@@ -3,10 +3,17 @@
 Website: https://hariprakashcit.github.io/New-OA/
 
 The frontend and AI workspace are public on GitHub Pages. The free backend is deployed at https://osteocare-new-oa-api.onrender.com
-and the Supabase tables are created. **Database access and AI generation still
-require the two secret keys to be entered in Render.**
+and the Supabase tables are created. The deployed backend passes its database
+readiness check and detects the AI configuration. Real AI generation and physical
+sensor operation still require a signed-in hardware rehearsal.
 
-## Activate the free backend and AI
+## Connect an ESP32 with USB
+
+Use **USB connection** on the website. Upload the downloadable USB firmware once,
+then click **Connect USB** in desktop Chrome or Edge. Local monitoring works
+without sign-in; enable cloud saving to use reports and AI. See [USB setup](USB_SETUP.md).
+
+## Configure the free backend and AI
 
 Follow [the free hosting setup](GEMMA_SETUP.md). The selected AI model is
 **Gemma 4 26B A4B (free)** through OpenRouter. The backend rejects paid model
@@ -46,9 +53,10 @@ For GitHub Pages updates, build with `npm run build -- --base=./`, copy `dist/`
 into `docs/`, retain `docs/.nojekyll`, then commit. GitHub Pages automatically
 publishes `main:/docs`.
 
-Latest validation: 29 backend tests, 14 frontend tests, TypeScript and Vite build
-passed. Live AI inference, database integration and hardware still need testing
-after account setup. No real sensor data or credentials are stored here.
+Latest validation: 32 backend tests, 22 frontend tests, TypeScript and Vite build
+passed. Local Chromium checks cover USB live preview, disconnect/reconnect,
+firmware download and unsupported browsers. No real sensor data or credentials
+are stored here. Physical hardware and live AI generation still need a rehearsal.
 
 The website includes only the public Supabase key and service URLs. Server and
 model keys must remain in Render. Supabase schema migration:

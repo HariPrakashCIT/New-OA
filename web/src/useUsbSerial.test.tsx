@@ -1,0 +1,33 @@
+import {act,renderHook,waitFor,cleanup} from '@testing-library/react';
+import {it,expect,vi,afterEach} from 'vitest';
+import {useUsbSerial} from './useUsbSerial';
+import {ReadableStream} from 'node:stream/web';
+import {TextDecoder,TextEncoder} from 'node:util';
+afterEach(()=>{cleanup();vi.unstubAllGlobals()});
+it('streams valid samples, ignores boot text, releases the port and reconnects',async()=>{
+ vi.stubGlobal('TextDecoder',TextDecoder);
+ let control:ReadableStreamDefaultController<Uint8Array>;
+ const close=vi.fn().mockResolvedValue(undefined);
+ const port={open:vi.fn().mockImplementation(()=>{port.readable=new ReadableStream({start(c){control=c as any}}) as any;return Promise.resolve()}),close,readable:null as any};
+ vi.stubGlobal('navigator',{serial:{requestPort:vi.fn().mockResolvedValue(port)}});
+ const {result}=renderHook(()=>useUsbSerial());
+ await act(()=>result.current.connect());
+ expect(port.open).toHaveBeenCalledWith({baudRate:115200});
+ expect(result.current.connected).toBe(true);expect(result.current.online).toBe(false);
+ const line=JSON.stringify({type:'osteocare_reading',protocol:1,heel_pressure:20,ball_pressure:30,toe_pressure:40});
+ await act(async()=>{control.enqueue(new TextEncoder().encode('booting\n'+line+'\n'))});
+ await waitFor(()=>expect(result.current.count).toBe(1));
+ expect(result.current.latest.heel_pressure).toBe(20);expect(result.current.invalid).toBe(1);expect(result.current.online).toBe(true);
+ await act(()=>result.current.disconnect());
+ expect(close).toHaveBeenCalledTimes(1);expect(result.current.online).toBe(false);
+ await act(()=>result.current.connect());expect(result.current.count).toBe(0);
+ await act(async()=>{control.error(new Error('Unplugged'))});
+ await waitFor(()=>expect(result.current.connected).toBe(false));
+ expect(result.current.error).toContain('connection lost');
+ await act(()=>result.current.useWifi());expect(result.current.mode).toBe(false);
+});
+it('handles chooser cancellation without claiming a connection',async()=>{
+ vi.stubGlobal('navigator',{serial:{requestPort:vi.fn().mockRejectedValue(new DOMException('Cancelled','NotFoundError'))}});
+ const {result}=renderHook(()=>useUsbSerial());await act(()=>result.current.connect());
+ expect(result.current.connected).toBe(false);expect(result.current.error).toContain('No port selected');
+});

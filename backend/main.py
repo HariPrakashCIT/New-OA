@@ -45,9 +45,8 @@ async def owned(device_id, uid):
     devices=await db('GET','devices',{'id':'eq.'+device_id,'user_id':'eq.'+uid})
     if not devices: raise HTTPException(404,'Device not found')
     return devices[0]
-class Reading(BaseModel):
+class PressureSample(BaseModel):
     model_config=ConfigDict(extra='forbid', strict=True)
-    device_id: str = Field(min_length=1,max_length=80)
     timestamp: datetime
     heel_pressure: int=Field(ge=0,le=4095)
     ball_pressure: int=Field(ge=0,le=4095)
@@ -61,6 +60,9 @@ class Reading(BaseModel):
         if not isinstance(v,datetime) or v.tzinfo is None: raise ValueError('Timezone required')
         if abs((now()-v).total_seconds())>300: raise ValueError('Device clock must be within five minutes of server')
         return v
+class Reading(PressureSample):
+    device_id: str = Field(min_length=1,max_length=80)
+
 class DeviceInput(BaseModel):
     name: str=Field(min_length=1,max_length=80)
 class SessionInput(BaseModel): device_id: str
@@ -88,6 +90,14 @@ async def ingest(reading: Reading,x_device_key: str=Header(default='')):
     row=reading.model_dump(mode='json'); row['received_at']=stamp()
     await db('POST','readings',body=row)
     return {'accepted':True}
+@app.post('/api/devices/{device_id}/usb-readings',status_code=201)
+async def ingest_usb(device_id:str,reading:PressureSample,uid=Depends(user)):
+    # The signed-in browser bridges USB data. Never give the browser a service key.
+    await owned(device_id,uid)
+    row=dict(reading.model_dump(mode='json'),device_id=device_id,received_at=stamp())
+    await db('POST','readings',body=row)
+    return {'accepted':True}
+
 @app.get('/api/devices')
 async def devices(uid=Depends(user)):
     rows=await db('GET','devices',{'user_id':'eq.'+uid,'select':'id,name,created_at'})

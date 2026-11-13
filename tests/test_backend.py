@@ -102,3 +102,36 @@ def test_readiness_checks_storage(client,monkeypatch):
     async def db(*args,**kwargs): return []
     monkeypatch.setattr(m,'db',db)
     assert client.get('/ready').json()=={'ready':True}
+
+
+def test_usb_requires_account_and_device_ownership(client,monkeypatch):
+    sample=reading();sample.pop('device_id')
+    assert client.post('/api/devices/D1/usb-readings',json=sample).status_code==401
+    calls=[]
+    async def db(method,table,params=None,body=None):
+        calls.append((method,table,params,body))
+        return []
+    monkeypatch.setattr(m,'db',db)
+    assert client.post('/api/devices/OTHER/usb-readings',json=sample,headers={'Authorization':'Bearer valid'}).status_code==404
+    assert calls==[('GET','devices',{'id':'eq.OTHER','user_id':'eq.owner'},None)]
+
+
+def test_usb_stores_three_real_samples_without_device_secret(client,monkeypatch):
+    stored=[]
+    async def db(method,table,params=None,body=None):
+        if table=='devices':
+            assert params=={'id':'eq.D1','user_id':'eq.owner'}
+            return [{'id':'D1'}]
+        stored.append(body);return [body]
+    monkeypatch.setattr(m,'db',db)
+    sample=reading();sample.pop('device_id')
+    result=client.post('/api/devices/D1/usb-readings',json=sample,headers={'Authorization':'Bearer valid'})
+    assert result.status_code==201 and result.json()=={'accepted':True}
+    assert stored[0]['device_id']=='D1' and stored[0]['ball_pressure']==300
+    assert stored[0]['received_at'] and stored[0]['timestamp']
+
+
+def test_usb_rejects_invalid_and_spoofed_samples(client):
+    sample=reading();sample.pop('device_id')
+    for change in [{'heel_pressure':None},{'toe_pressure':4096},{'device_id':'OTHER'},{'ball_pressure':False},{'timestamp':'2020-01-01T00:00:00Z'}]:
+        assert client.post('/api/devices/D1/usb-readings',json={**sample,**change},headers={'Authorization':'Bearer valid'}).status_code==422
