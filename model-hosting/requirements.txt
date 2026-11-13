@@ -1,0 +1,7 @@
+# Model support changes rapidly. Install on the GPU host and lock versions after a real inference test.
+# Uses Google's current Transformers loading API; GPU runtime has not been validated in this workspace.
+transformers
+torch
+accelerate
+fastapi==0.115.8
+uvicorn[standard]==0.34.0

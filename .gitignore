@@ -1,0 +1,10 @@
+node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+.env
+.env.*.local
+backend/.env
+mobile/.expo/
+dist/
+*.zip

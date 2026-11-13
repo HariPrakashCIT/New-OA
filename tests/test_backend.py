@@ -1,0 +1,88 @@
+from datetime import timedelta
+import hashlib
+import pytest
+from fastapi.testclient import TestClient
+from backend import main as m
+from backend.analysis import analyze
+
+@pytest.fixture
+def client(monkeypatch):
+    async def identity(token):
+        if token!='valid': raise m.HTTPException(401,'Invalid token')
+        return 'owner'
+    monkeypatch.setattr(m,'identity',identity)
+    return TestClient(m.app)
+
+def reading(**changes):
+    return dict(device_id='D1',timestamp=m.stamp(),heel_pressure=200,ball_pressure=300,toe_pressure=100,**changes)
+
+def test_requires_signin(client):
+    assert client.get('/api/devices').status_code==401
+
+def test_invalid_readings(client):
+    for change in [{'heel_pressure':-1},{'toe_pressure':4096},{'ball_pressure':None},{'heel_pressure':True},{'toe_pressure':'12'},{'timestamp':'2020-01-01T00:00:00Z'},{'timestamp':'2026-11-12T00:00:00'},{'extra':2}]:
+        data=reading();data.update(change)
+        assert client.post('/api/readings',json=data).status_code==422
+    data=reading();del data['heel_pressure']
+    assert client.post('/api/readings',json=data).status_code==422
+
+def test_ingestion_key_and_persistence(client,monkeypatch):
+    stored=[]
+    async def db(method,table,params=None,body=None):
+        if method=='GET':return [{'id':'D1','user_id':'owner','key_hash':hashlib.sha256(b'secret').hexdigest()}]
+        stored.append(body);return [body]
+    monkeypatch.setattr(m,'db',db)
+    assert client.post('/api/readings',json=reading(),headers={'X-Device-Key':'bad'}).status_code==401
+    assert not stored
+    assert client.post('/api/readings',json=reading(),headers={'X-Device-Key':'secret'}).status_code==201
+    assert stored[0]['heel_pressure']==200 and 'received_at' in stored[0]
+
+def test_other_users_device_hidden(client,monkeypatch):
+    async def db(*args,**kwargs):return []
+    monkeypatch.setattr(m,'db',db)
+    assert client.get('/api/readings?device_id=OTHER',headers={'Authorization':'Bearer valid'}).status_code==404
+    assert client.post('/api/sessions',json={'device_id':'OTHER'},headers={'Authorization':'Bearer valid'}).status_code==404
+    assert client.get('/api/reports/OTHER/pdf',headers={'Authorization':'Bearer valid'}).status_code==404
+
+def test_offline_uses_receipt_time(client,monkeypatch):
+    async def db(method,table,params=None,body=None):
+        if table=='devices':return [{'id':'D1','name':'Insole'}]
+        return [dict(reading(),received_at=(m.now()-timedelta(seconds=20)).isoformat())]
+    monkeypatch.setattr(m,'db',db)
+    r=client.get('/api/devices',headers={'Authorization':'Bearer valid'})
+    assert r.status_code==200 and not r.json()[0]['online']
+
+def test_pdf_real_report(client,monkeypatch):
+    async def db(*args,**kwargs):return [{'period':'day','created_at':m.stamp(),'analysis':analyze([reading()])}]
+    monkeypatch.setattr(m,'db',db)
+    r=client.get('/api/reports/R1/pdf',headers={'Authorization':'Bearer valid'})
+    assert r.status_code==200 and r.content.startswith(b'%PDF')
+
+def test_live_authenticated_and_offline(client,monkeypatch):
+    async def db(method,table,params=None,body=None):
+        if table=='devices':return [{'id':'D1'}]
+        return []
+    monkeypatch.setattr(m,'db',db)
+    with client.websocket_connect('/ws/live/D1') as ws:
+        ws.send_json({'token':'valid'})
+        assert ws.receive_json()=={'reading':None,'online':False}
+
+def test_analysis_no_fabricated_results():
+    a=analyze([]);assert a['samples']==0 and a['shares'] is None
+    a=analyze([dict(timestamp=m.stamp(),heel_pressure=0,ball_pressure=0,toe_pressure=0)])
+    assert a['shares'] is None
+    a=analyze([dict(timestamp=m.stamp(),heel_pressure=4095,ball_pressure=20,toe_pressure=10)])
+    assert any('saturation' in s for s in a['observations'])
+    assert a['shares'][0]>99
+
+
+def test_readiness_fails_without_configuration(client,monkeypatch):
+    monkeypatch.setattr(m,'URL','')
+    monkeypatch.setattr(m,'KEY','')
+    assert client.get('/health').json()['configured'] is False
+    assert client.get('/ready').status_code==503
+
+def test_readiness_checks_storage(client,monkeypatch):
+    async def db(*args,**kwargs): return []
+    monkeypatch.setattr(m,'db',db)
+    assert client.get('/ready').json()=={'ready':True}

@@ -1,30 +1,50 @@
 # OsteoCare AI
 
-Responsive mobility-monitoring frontend with a dedicated **AI workspace**.
+Website: https://hariprakashcit.github.io/New-OA/
 
-The published frontend is served by GitHub Pages from `main:/docs`.
-`docs/` contains the built website extracted from `OsteoCare-new-version.zip`.
-Asset URLs are relative so the website works under this repository's `/New-OA/` path.
+The frontend and AI workspace are public on GitHub Pages. **The backend,
+Supabase database and live AI generation still need account configuration.**
 
-## Current functionality
+## Activate the free backend and AI
 
-Navigation, the AI workspace, connection settings and empty states are available.
-Authentication, saved reports, live ESP32 readings and Gemma explanations require
-a deployed FastAPI backend, a configured Supabase project and a hosted Gemma endpoint.
-Those services are not included in GitHub Pages hosting and are not yet configured.
+Follow [the free hosting setup](GEMMA_SETUP.md). The selected AI model is
+**Gemma 4 26B A4B (free)** through OpenRouter. The backend rejects paid model
+aliases and requires a secret API key; it does not silently use paid inference.
 
-Use **Connect your workspace** to enter the backend URL, Supabase project URL and
-Supabase public/anon key. Never enter a service-role key in the frontend. Configure
-the backend to allow the GitHub Pages origin in its CORS settings and configure
-the frontend URL in the Supabase authentication redirect settings.
+[Deploy the free FastAPI service on Render](https://render.com/deploy?repo=https://github.com/HariPrakashCIT/New-OA)
 
-## Local preview
+Create a free Supabase project first, apply `database/schema.sql`, and supply
+its service-role key and your OpenRouter key in Render's environment settings.
+Never commit real keys or put server secrets into the browser.
 
-Download and extract `OsteoCare-new-version.zip`, then open
-`OsteoCare-preview.html`. Alternatively, run the included `start.py` with Python 3
-and open `http://localhost:4173`.
+## Saved source
 
-## Publish updates
+- `web/`: editable React/TypeScript frontend, AI workspace and frontend tests.
+- `backend/`: FastAPI, authenticated REST/WebSockets, analysis, PDF reports and Gemma adapter.
+- `database/`: Supabase schema and row-level security configuration.
+- `mobile/`: Expo/React Native application source.
+- `firmware/`: ESP32 Arduino firmware for heel, ball and toe FSRs.
+- `tests/`: backend access, validation, persistence and AI adapter tests.
+- `render.yaml`: free backend deployment blueprint.
+- `model-hosting/`: earlier E4B GPU recipe, retained but not used by the free configuration.
+- `docs/`: published GitHub Pages build, served from `main:/docs`.
 
-Replace the built files in `docs/`, keep asset links relative, and commit to `main`.
-GitHub Pages automatically republishes the contents of `docs/`.
+The root ZIP, `website/` and standalone HTML are the earlier downloadable
+frontend snapshot. The current frontend is `web/` and the current published
+build is `docs/`.
+
+## Build and test
+
+Frontend: `npm ci`, `npm test`, `npm run build`.
+Backend: create a Python 3.12 virtual environment, install
+`backend/requirements.txt`, then run `python -m pytest tests -q`.
+Copy `backend/.env.example` to a local untracked `backend/.env` for development.
+Set its values securely and run `scripts/start.sh` from the repository root.
+
+For GitHub Pages updates, build with `npm run build -- --base=./`, copy `dist/`
+into `docs/`, retain `docs/.nojekyll`, then commit. GitHub Pages automatically
+publishes `main:/docs`.
+
+Latest validation: 28 backend tests, 13 frontend tests, TypeScript and Vite build
+passed. Live AI inference, database integration and hardware still need testing
+after account setup. No real sensor data or credentials are stored here.

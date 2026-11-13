@@ -1,0 +1,1 @@
+{"expo":{"name":"OsteoCare AI","slug":"osteocare-ai","version":"1.0.0","orientation":"portrait","userInterfaceStyle":"light","scheme":"osteocare","android":{"package":"com.osteocare.ai","permissions":["INTERNET"]},"plugins":["expo-secure-store"]}}

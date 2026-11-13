@@ -1,0 +1,9 @@
+**
+!backend/
+!backend/*.py
+!backend/requirements.txt
+!backend/Dockerfile
+!model-hosting/
+!model-hosting/*.py
+!model-hosting/requirements.txt
+!model-hosting/Dockerfile

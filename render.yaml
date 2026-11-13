@@ -1,0 +1,26 @@
+# Free FastAPI service. Supabase and the OpenRouter API key must be supplied securely.
+services:
+  - type: web
+    name: osteocare-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /ready
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://hariprakashcit.github.io,https://osteocare-ai-mobility-monitor.packedsesame1.chatgpt.site,http://localhost:5173,http://localhost:4173
+      - key: GEMMA_API_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: GEMMA_MODEL
+        value: google/gemma-4-26b-a4b-it:free
+      - key: GEMMA_FREE_ONLY
+        value: "true"
+      - key: GEMMA_API_KEY
+        sync: false
